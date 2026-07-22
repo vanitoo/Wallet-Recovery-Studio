@@ -1,121 +1,87 @@
 # Wallet Recovery Studio Roadmap
 
-## v0.1
+## v0.1 — Foundation ✅
 
-- Project skeleton
-- UI
-- Local database
-- Wallet model
+- [x] Adapt privacy-first Next.js template
+- [x] Create Recovery Workspace shell
+- [x] Add strict recovery state model
+- [x] Establish Bitcoin-first scope
+- [x] Document security boundaries and threat model
+- [x] Add CI and GitHub Pages deployment
+- [x] Add README, CHANGELOG and architecture documentation
 
----
+## v0.2 — Seed Inspector
 
-## v0.2
+- [ ] Review and select audited BIP39/BIP32 dependencies
+- [ ] Validate 12/15/18/21/24-word BIP39 phrases locally
+- [ ] Verify checksum and language
+- [ ] Support optional BIP39 passphrase with clear warning
+- [ ] Distinguish BIP39 from Electrum and SLIP39 formats
+- [ ] Add official test vectors
+- [ ] Prevent persistence, logging and accidental export of secrets
 
-Wallet Database
+## v0.3 — Known Address Discovery
 
-- wallets.json
-- versions
-- derivation paths
-- metadata
+- [ ] Generate Bitcoin addresses for BIP44, BIP49, BIP84 and BIP86
+- [ ] Match a user-provided public address locally
+- [ ] Run derivation batches in a Web Worker
+- [ ] Add progress, pause, resume and cancel
+- [ ] Search controlled account/change/index ranges
+- [ ] Export sanitized match report without secrets
 
----
+## v0.4 — Wallet Profile Database
 
-## v0.3
+- [ ] Define versioned wallet-profile schema
+- [ ] Add source URL, verification status and test vectors per profile
+- [ ] Add Ledger, Trezor, Electrum, Sparrow, BlueWallet and historical profiles
+- [ ] Research walletsrecovery.org licensing before importing any data
+- [ ] Detect conflicts and duplicate path definitions
 
-Recovery Assistant
+## v0.5 — Derivation Explorer
 
-Wizard
+- [ ] Custom derivation path parser
+- [ ] Safe range editor with scan-cost estimate
+- [ ] Address and xpub preview
+- [ ] Descriptor preview for supported Bitcoin script types
+- [ ] CSV/JSON export of public information only
 
-Recovery modes
+## v0.6 — Account Discovery
 
-Recommendations
+- [ ] Configurable gap limit
+- [ ] Controlled account discovery
+- [ ] Deterministic scan plans
+- [ ] Resume metadata without storing seed material
+- [ ] Performance benchmarks
 
----
+## v0.7 — Optional Activity Scan
 
-## v0.4
+- [ ] Explicit opt-in network mode
+- [ ] Self-hosted Bitcoin Core integration design
+- [ ] Electrum/Esplora connector design
+- [ ] Privacy disclosure before every external request
+- [ ] Rate limits, batching and cancellation
+- [ ] Never enable public API scanning by default
 
-Path Scanner
+## v0.8 — Descriptor and Multisig Diagnostics
 
-BIP44
+- [ ] Parse and validate descriptors
+- [ ] Descriptor checksum
+- [ ] Identify available cosigner public keys
+- [ ] Validate multisig policy and key order
+- [ ] Do not claim recovery of unknown private cosigners
 
-BIP49
+## v0.9 — Additional Networks
 
-BIP84
+- [ ] Evaluate Ethereum/EVM as a separate domain module
+- [ ] Add networks only with maintained libraries and test vectors
+- [ ] Avoid a generic multi-coin abstraction until two implementations prove it useful
 
-BIP86
+## v1.0 — Audited Release
 
-Custom paths
-
----
-
-## v0.5
-
-Account Scanner
-
-Automatic Account Discovery
-
-Gap limit
-
-Parallel scanning
-
----
-
-## v0.6
-
-Wallet Identification Engine
-
-Fingerprint detection
-
-Wallet scoring
-
-Probability engine
-
----
-
-## v0.7
-
-Recovery Engine
-
-Automatic recovery
-
-Ranking
-
-Confidence %
-
----
-
-## v0.8
-
-Descriptor Explorer
-
-Descriptors
-
-Policies
-
-Miniscript
-
----
-
-## v0.9
-
-Multisig Recovery
-
-Cosigners
-
-Descriptor recovery
-
----
-
-## v1.0
-
-Professional Release
-
-Workspace
-
-Reports
-
-Export
-
-Plugins
-
-Documentation
+- [ ] Reproducible release build
+- [ ] Offline downloadable package
+- [ ] Complete user and developer documentation
+- [ ] Accessibility review
+- [ ] Dependency and security review
+- [ ] Stable wallet-profile database
+- [ ] End-to-end recovery test suite
