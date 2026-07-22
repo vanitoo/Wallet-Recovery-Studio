@@ -1,183 +1,67 @@
 # Wallet Recovery Studio
 
-Professional open-source toolkit for cryptocurrency wallet recovery and derivation path discovery.
+Privacy-first browser workspace for diagnosing cryptocurrency wallet recovery problems.
 
-Unlike traditional HD wallet explorers, Wallet Recovery Studio is designed to recover inaccessible wallets by automatically testing wallet standards, derivation paths, account structures and wallet-specific implementations.
+Wallet Recovery Studio helps users understand why valid recovery material can produce unexpected addresses in another wallet. It is designed to compare known public addresses, derivation paths and wallet profiles locally in the browser.
 
-No private information is ever transmitted.
-Everything runs locally.
+> [!IMPORTANT]
+> This project is a diagnostic tool, not a wallet. It does not hold funds, sign transactions or recover unknown seed phrases.
 
----
+## Status
 
-# Features
+**v0.1 Foundation** is implemented: static application shell, Bitcoin-first scope, initial domain model, security boundaries, documentation and CI. Cryptographic derivation is intentionally deferred until dependency review and test vectors are ready.
 
-## Recovery Assistant
+## Principles
 
-Guided recovery wizard.
+- Local-first and offline-capable
+- No registration, analytics, cookies or telemetry
+- No automatic network requests
+- Secrets are never persisted by the application
+- Public results are separated from sensitive inputs
+- Small, auditable dependency surface
+- Strict TypeScript validation
 
-Examples:
+## Workspace roadmap
 
-- I have 12 words
-- I have 24 words
-- I know my first address
-- I know my xpub
-- I know transaction history
-- I don't know wallet type
+- **Recovery** — guided known-address discovery
+- **Seed Inspector** — local phrase and checksum diagnostics
+- **Wallet Profiles** — documented derivation conventions
+- **Derivation Explorer** — expert path exploration
+- **Security** — threat model and safe operating guidance
 
----
+## Development
 
-## Wallet Database
+Requirements: Node.js 22 and npm 10+.
 
-Large built-in database of wallets:
+```bash
+npm install
+npm run dev
+```
 
-- Ledger
-- Trezor
-- Electrum
-- Sparrow
-- BlueWallet
-- Trust Wallet
-- MetaMask
-- Exodus
-- Atomic
-- SafePal
-- Coinomi
-- Guarda
-- Edge
-- Cake Wallet
-- Wasabi
-- Specter
-- Rabby
-- Phantom
-- dozens more...
+Open `http://localhost:3000`.
 
-Each wallet contains:
+## Validation
 
-- derivation paths
-- supported standards
-- script types
-- account behavior
-- notes
-- historical compatibility
+```bash
+npm run check
+```
 
----
+## GitHub Pages
 
-## Automatic Path Scanner
+The project uses static export. In repository settings, select **GitHub Actions** as the Pages deployment source.
 
-Scans:
+## Security warning
 
-- BIP44
-- BIP49
-- BIP84
-- BIP86
-- legacy paths
-- wallet-specific paths
-- custom paths
+A browser application cannot guarantee immediate removal of secrets from memory. For wallets containing meaningful funds, use an offline computer with a trusted operating system and disable browser extensions.
 
----
+Never enter a recovery phrase into a hosted copy you do not personally trust. Prefer a reviewed local release.
 
-## Account Discovery
+See [SECURITY.md](SECURITY.md) and [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 
-Automatically scans:
+## Roadmap
 
-Account 0...
+See [TODO.md](TODO.md).
 
-↓
+## License
 
-Account 100+
-
-without user interaction.
-
----
-
-## Multi-Coin
-
-Bitcoin
-
-Ethereum
-
-Litecoin
-
-Dogecoin
-
-Dash
-
-Bitcoin Cash
-
-Solana
-
-Tron
-
-Polygon
-
-Arbitrum
-
-Optimism
-
-Base
-
-BNB
-
-Avalanche
-
-...
-
----
-
-## Descriptor Recovery
-
-Support:
-
-- wpkh()
-- sh(wpkh())
-- tr()
-- combo()
-- sortedmulti()
-
----
-
-## Multisig Recovery
-
-Recover:
-
-- multisig descriptors
-- cosigner xpubs
-- missing participants
-
----
-
-## Wallet Fingerprinting
-
-Automatically identifies wallet software using:
-
-- derivation paths
-- account structure
-- metadata
-- xpub prefixes
-- script types
-
----
-
-## Recovery Reports
-
-Generate detailed HTML/PDF reports containing:
-
-- discovered wallets
-- balances
-- used addresses
-- derivation paths
-- accounts
-- statistics
-
----
-
-## Security
-
-Wallet Recovery Studio is completely offline.
-
-No telemetry.
-
-No analytics.
-
-No cloud.
-
-No hidden API calls.
+MIT
