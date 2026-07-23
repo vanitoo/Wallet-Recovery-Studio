@@ -141,6 +141,7 @@ async function run(payload: StartMessage["payload"]) {
 
 self.onmessage = (event: MessageEvent<WorkerInput>) => {
   const message = event.data;
+
   if (message.type === "pause") {
     if (!paused && !stopped) {
       paused = true;
@@ -148,6 +149,7 @@ self.onmessage = (event: MessageEvent<WorkerInput>) => {
     }
     return;
   }
+
   if (message.type === "resume") {
     if (paused && !stopped) {
       paused = false;
@@ -156,15 +158,19 @@ self.onmessage = (event: MessageEvent<WorkerInput>) => {
     }
     return;
   }
+
   if (message.type === "stop") {
     stopped = true;
     paused = false;
     releasePause();
     return;
   }
-  void run(message.payload).catch((error) => {
-    post({ type: "error", payload: error instanceof Error ? error.message : "Не удалось выполнить поиск." });
-  });
+
+  if (message.type === "start") {
+    void run(message.payload).catch((error) => {
+      post({ type: "error", payload: error instanceof Error ? error.message : "Не удалось выполнить поиск." });
+    });
+  }
 };
 
 export {};
