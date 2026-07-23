@@ -1,16 +1,20 @@
-# Version
+# Версия
 
-Current version: **0.1.1**
+Текущая версия: **0.2.0**
 
-Milestone: **Wallet Profile Database Foundation**
+Этап: **Seed Inspector и базовый поиск известного адреса**
 
-Status:
+Состояние:
 
-- Application foundation: complete
-- Versioned Bitcoin profile schema: complete
-- Standard BIP44/BIP49/BIP84/BIP86 profiles: complete
-- Seed Inspector: not started
-- Address derivation and matching: not started
-- Network activity scan: not started and disabled by design
+- основа приложения: готова;
+- версия и схема базы Bitcoin-профилей: готовы;
+- стандартные BIP44/BIP49/BIP84/BIP86: готовы;
+- проверка английской BIP39 seed-фразы и checksum: готова;
+- необязательная BIP39 passphrase: поддерживается;
+- локальная генерация Bitcoin mainnet-адресов: готова;
+- поиск одного известного адреса: готов;
+- прогресс, остановка и очистка формы: готовы;
+- Web Worker, пауза/продолжение и экспорт отчёта: ещё не реализованы;
+- сетевой поиск активности: не реализован и отключён по умолчанию.
 
-The project does not yet accept seed phrases or derive addresses.
+Приложение принимает seed-фразу только в памяти открытой страницы. Оно не использует localStorage, IndexedDB, аналитику или внешние API.
