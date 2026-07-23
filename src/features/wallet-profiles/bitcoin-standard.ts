@@ -28,12 +28,12 @@ function createStandardDerivationProfile(
     changeValues: [0, 1],
     indexRange: DEFAULT_INDEX_RANGE,
     rules: [
-      "Account is hardened.",
-      "Change 0 is the external/receive branch; change 1 is the internal/change branch.",
+      "Индекс учётной записи является усиленным (hardened).",
+      "Ветка 0 используется для получения, ветка 1 — для сдачи.",
     ],
     limitations: [
-      "Default ranges are intentionally conservative and must be expanded manually.",
-      "A derivation match does not prove wallet ownership.",
+      "Диапазоны по умолчанию намеренно ограничены и расширяются только вручную.",
+      "Совпадение пути деривации само по себе не доказывает владение кошельком.",
     ],
   };
 }
@@ -41,28 +41,28 @@ function createStandardDerivationProfile(
 const standardProfiles: readonly DerivationProfile[] = [
   createStandardDerivationProfile({
     id: "bitcoin-bip44-p2pkh",
-    name: "Bitcoin Legacy",
+    name: "Устаревшие адреса Bitcoin",
     standard: "BIP44",
     pathTemplate: "m/44'/0'/{account}'/{change}/{index}",
     scriptType: "p2pkh",
   }),
   createStandardDerivationProfile({
     id: "bitcoin-bip49-p2sh-p2wpkh",
-    name: "Bitcoin Nested SegWit",
+    name: "Вложенный SegWit",
     standard: "BIP49",
     pathTemplate: "m/49'/0'/{account}'/{change}/{index}",
     scriptType: "p2sh-p2wpkh",
   }),
   createStandardDerivationProfile({
     id: "bitcoin-bip84-p2wpkh",
-    name: "Bitcoin Native SegWit",
+    name: "Нативный SegWit",
     standard: "BIP84",
     pathTemplate: "m/84'/0'/{account}'/{change}/{index}",
     scriptType: "p2wpkh",
   }),
   createStandardDerivationProfile({
     id: "bitcoin-bip86-p2tr",
-    name: "Bitcoin Taproot",
+    name: "Taproot",
     standard: "BIP86",
     pathTemplate: "m/86'/0'/{account}'/{change}/{index}",
     scriptType: "p2tr",
@@ -72,21 +72,21 @@ const standardProfiles: readonly DerivationProfile[] = [
 export const bitcoinStandardWalletProfile: WalletProfile = {
   schemaVersion: WALLET_PROFILE_SCHEMA_VERSION,
   id: "bitcoin-standard-paths",
-  wallet: "Bitcoin standards",
+  wallet: "Стандарты Bitcoin",
   network: "bitcoin",
   seedFormat: "bip39",
   passphraseSupport: "optional",
   category: "standard",
   source: {
-    title: "Bitcoin Improvement Proposals 44, 49, 84 and 86",
+    title: "Bitcoin Improvement Proposals 44, 49, 84 и 86",
     url: "https://github.com/bitcoin/bips",
     verifiedAt: "2026-07-23",
     status: "verified",
   },
   profiles: standardProfiles,
   notes: [
-    "These profiles describe standards, not the complete historical behavior of a specific wallet application.",
-    "Real-wallet profiles may narrow ranges or add historical rules while reusing these conventions.",
+    "Эти профили описывают стандарты, а не полное историческое поведение конкретного приложения.",
+    "Профили реальных кошельков смогут сужать диапазоны и добавлять исторические правила.",
   ],
   tags: ["bitcoin", "bip39", "standard", "discovery"],
 };

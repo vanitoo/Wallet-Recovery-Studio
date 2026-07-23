@@ -3,12 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Wallet Recovery Studio",
-  description: "Privacy-first local workspace for wallet recovery diagnostics.",
+  description: "Локальная студия диагностики и восстановления структуры криптовалютных кошельков.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="ru">
       <body>{children}</body>
     </html>
   );

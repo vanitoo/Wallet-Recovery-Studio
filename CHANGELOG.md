@@ -24,6 +24,8 @@ All notable changes to this project will be documented here.
 
 - Existing foundation cards now derive their data from the wallet-profile database.
 - Wallet Profile Database foundation was moved before Seed Inspector in the implementation order.
+- The application interface, metadata, accessibility labels and standard profile display names are now Russian-first.
+- The main workspace now clearly shows the completed v0.1.1 status and profile database boundaries.
 
 ### Security
 
