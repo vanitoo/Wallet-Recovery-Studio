@@ -10,6 +10,17 @@
 - [x] Add CI and GitHub Pages deployment
 - [x] Add README, CHANGELOG and architecture documentation
 
+## v0.1.1 — Wallet Profile Database Foundation ✅
+
+- [x] Define a versioned wallet-profile schema
+- [x] Separate wallet metadata from derivation profiles
+- [x] Add standard Bitcoin BIP44, BIP49, BIP84 and BIP86 profiles
+- [x] Add conservative account, branch and index ranges
+- [x] Add source and verification metadata
+- [x] Add database integrity validation
+- [x] Keep existing workspace cards compatible with the new database
+- [x] Add ROADMAP.md and VERSION.md
+
 ## v0.2 — Seed Inspector
 
 - [ ] Review and select audited BIP39/BIP32 dependencies
@@ -23,35 +34,38 @@
 ## v0.3 — Known Address Discovery
 
 - [ ] Generate Bitcoin addresses for BIP44, BIP49, BIP84 and BIP86
-- [ ] Match a user-provided public address locally
+- [ ] Match one or more user-provided public addresses locally
+- [ ] Validate address network and infer compatible script types
 - [ ] Run derivation batches in a Web Worker
 - [ ] Add progress, pause, resume and cancel
 - [ ] Search controlled account/change/index ranges
 - [ ] Export sanitized match report without secrets
 
-## v0.4 — Wallet Profile Database
+## v0.4 — Real Wallet Profiles
 
-- [ ] Define versioned wallet-profile schema
+- [ ] Add Ledger Live and Trezor Suite profiles from official sources
+- [ ] Add Electrum profiles as a separate seed-format family
+- [ ] Add Sparrow, BlueWallet and Bitcoin Core descriptor profiles
+- [ ] Research BRD, Copay/BitPay, Trust Wallet and Exodus historical rules
 - [ ] Add source URL, verification status and test vectors per profile
-- [ ] Add Ledger, Trezor, Electrum, Sparrow, BlueWallet and historical profiles
 - [ ] Research walletsrecovery.org licensing before importing any data
 - [ ] Detect conflicts and duplicate path definitions
 
-## v0.5 — Derivation Explorer
+## v0.5 — Recovery Search Modes
+
+- [ ] Fast search for a selected wallet
+- [ ] Ranked smart search from device, year and address clues
+- [ ] Bounded full search across compatible profiles
+- [ ] Search-cost estimate and hard operation limits
+- [ ] Stop-on-first-match and continue-search options
+
+## v0.6 — Derivation Explorer and Reports
 
 - [ ] Custom derivation path parser
 - [ ] Safe range editor with scan-cost estimate
 - [ ] Address and xpub preview
+- [ ] JSON and TXT sanitized reports
 - [ ] Descriptor preview for supported Bitcoin script types
-- [ ] CSV/JSON export of public information only
-
-## v0.6 — Account Discovery
-
-- [ ] Configurable gap limit
-- [ ] Controlled account discovery
-- [ ] Deterministic scan plans
-- [ ] Resume metadata without storing seed material
-- [ ] Performance benchmarks
 
 ## v0.7 — Optional Activity Scan
 
