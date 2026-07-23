@@ -2,8 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 import {
+  inferProfilesForAddresses,
   inspectMnemonic,
-  searchKnownAddress,
+  parseKnownAddresses,
+  searchKnownAddresses,
+  validateBitcoinAddress,
   type RecoveryMatch,
   type SearchProgress,
   type SupportedProfile,
@@ -19,43 +22,62 @@ const PROFILE_OPTIONS: { id: SupportedProfile; label: string }[] = [
 export function RecoverySearchForm() {
   const [mnemonic, setMnemonic] = useState("");
   const [passphrase, setPassphrase] = useState("");
-  const [knownAddress, setKnownAddress] = useState("");
+  const [knownAddressesText, setKnownAddressesText] = useState("");
   const [profiles, setProfiles] = useState<SupportedProfile[]>(["bip44", "bip49", "bip84", "bip86"]);
   const [accountEnd, setAccountEnd] = useState(4);
   const [indexEnd, setIndexEnd] = useState(19);
   const [progress, setProgress] = useState<SearchProgress | null>(null);
-  const [match, setMatch] = useState<RecoveryMatch | null>(null);
+  const [matches, setMatches] = useState<RecoveryMatch[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const inspection = useMemo(() => inspectMnemonic(mnemonic), [mnemonic]);
+  const knownAddresses = useMemo(() => parseKnownAddresses(knownAddressesText), [knownAddressesText]);
+  const validAddresses = useMemo(() => knownAddresses.filter(validateBitcoinAddress), [knownAddresses]);
+  const invalidAddresses = useMemo(() => knownAddresses.filter((address) => !validateBitcoinAddress(address)), [knownAddresses]);
+  const suggestedProfiles = useMemo(() => inferProfilesForAddresses(validAddresses), [validAddresses]);
   const total = profiles.length * (accountEnd + 1) * 2 * (indexEnd + 1);
 
   function toggleProfile(profile: SupportedProfile) {
     setProfiles((current) => current.includes(profile) ? current.filter((item) => item !== profile) : [...current, profile]);
   }
 
+  function applySuggestedProfiles() {
+    if (suggestedProfiles.length === 0) {
+      setMessage("Не удалось определить профиль по введённым адресам.");
+      return;
+    }
+    setProfiles(suggestedProfiles);
+    setMessage(`Выбраны совместимые профили: ${suggestedProfiles.map((item) => item.toUpperCase()).join(", ")}.`);
+  }
+
   function clearSensitiveData() {
     abortRef.current?.abort();
     setMnemonic("");
     setPassphrase("");
-    setKnownAddress("");
+    setKnownAddressesText("");
     setProgress(null);
-    setMatch(null);
+    setMatches([]);
     setMessage("Чувствительные данные удалены из состояния страницы. Для дополнительной очистки закройте вкладку браузера.");
     setRunning(false);
   }
 
   async function startSearch() {
     setMessage(null);
-    setMatch(null);
+    setMatches([]);
+    setProgress(null);
+
     if (!inspection.validChecksum) {
       setMessage("Seed-фраза не прошла проверку BIP39 checksum. Сейчас поддерживается английский словарь BIP39.");
       return;
     }
-    if (!knownAddress.trim()) {
+    if (knownAddresses.length === 0) {
       setMessage("Введите хотя бы один известный Bitcoin-адрес.");
+      return;
+    }
+    if (invalidAddresses.length > 0) {
+      setMessage(`Исправьте некорректные адреса: ${invalidAddresses.join(", ")}`);
       return;
     }
     if (profiles.length === 0) {
@@ -67,18 +89,24 @@ export function RecoverySearchForm() {
     abortRef.current = controller;
     setRunning(true);
     try {
-      const result = await searchKnownAddress({
+      const result = await searchKnownAddresses({
         mnemonic,
         passphrase,
-        knownAddress,
+        knownAddresses,
         profiles,
         accountEnd,
         indexEnd,
         signal: controller.signal,
         onProgress: setProgress,
       });
-      setMatch(result);
-      setMessage(result ? null : `Совпадение не найдено после проверки ${total.toLocaleString("ru-RU")} адресов.`);
+      setMatches(result);
+      if (result.length === 0) {
+        setMessage(`Совпадения не найдены после проверки ${total.toLocaleString("ru-RU")} адресов.`);
+      } else if (result.length < knownAddresses.length) {
+        setMessage(`Найдено ${result.length} из ${knownAddresses.length} известных адресов. Для остальных увеличьте диапазон или выберите дополнительные профили.`);
+      } else {
+        setMessage(`Найдены все известные адреса: ${result.length} из ${knownAddresses.length}.`);
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") setMessage("Поиск остановлен пользователем.");
       else setMessage(error instanceof Error ? error.message : "Не удалось выполнить поиск.");
@@ -93,7 +121,7 @@ export function RecoverySearchForm() {
       <div className="section-heading">
         <div>
           <p className="eyebrow">Рабочий локальный поиск</p>
-          <h2 id="recovery-search-title">Найти путь по известному адресу</h2>
+          <h2 id="recovery-search-title">Найти пути по известным адресам</h2>
         </div>
         <span className="status-pill">Сеть отключена</span>
       </div>
@@ -116,9 +144,13 @@ export function RecoverySearchForm() {
         </label>
 
         <label className="field">
-          <span>Известный Bitcoin-адрес</span>
-          <input value={knownAddress} onChange={(event) => setKnownAddress(event.target.value)} autoComplete="off" spellCheck={false} placeholder="1…, 3…, bc1q… или bc1p…" />
-          <small>Например, адрес из истории вывода с биржи.</small>
+          <span>Известные Bitcoin-адреса</span>
+          <textarea value={knownAddressesText} onChange={(event) => setKnownAddressesText(event.target.value)} rows={4} autoComplete="off" spellCheck={false} placeholder={"По одному адресу на строку\n1…\n3…\nbc1q…\nbc1p…"} />
+          <small>
+            {knownAddresses.length === 0
+              ? "Можно вставить несколько адресов через новую строку, пробел или запятую."
+              : `${validAddresses.length} корректных${invalidAddresses.length ? ` · ${invalidAddresses.length} с ошибкой` : ""}`}
+          </small>
         </label>
       </div>
 
@@ -130,36 +162,43 @@ export function RecoverySearchForm() {
             <span>{option.label}</span>
           </label>
         ))}
+        <button className="profile-auto-button" type="button" onClick={applySuggestedProfiles} disabled={validAddresses.length === 0 || running}>
+          Подобрать по адресам
+        </button>
       </fieldset>
 
       <div className="range-grid">
         <label className="field"><span>Последний account</span><input type="number" min={0} max={20} value={accountEnd} onChange={(event) => setAccountEnd(Math.min(20, Math.max(0, Number(event.target.value))))} /></label>
         <label className="field"><span>Последний index</span><input type="number" min={0} max={100} value={indexEnd} onChange={(event) => setIndexEnd(Math.min(100, Math.max(0, Number(event.target.value))))} /></label>
-        <div className="estimate"><span>Будет проверено</span><strong>{total.toLocaleString("ru-RU")} адресов</strong></div>
+        <div className="estimate"><span>Будет проверено</span><strong>{total.toLocaleString("ru-RU")} адресов</strong><small>Целей: {knownAddresses.length}</small></div>
       </div>
 
       {progress && (
         <div className="progress-box">
           <progress max={progress.total} value={progress.checked} />
-          <span>{progress.checked.toLocaleString("ru-RU")} / {progress.total.toLocaleString("ru-RU")} · {progress.profile.toUpperCase()} · account {progress.account} · ветка {progress.change} · index {progress.index}</span>
+          <span>{progress.checked.toLocaleString("ru-RU")} / {progress.total.toLocaleString("ru-RU")} · найдено {progress.found} из {progress.targets} · {progress.profile.toUpperCase()} · account {progress.account} · ветка {progress.change} · index {progress.index}</span>
         </div>
       )}
 
       {message && <div className="message-box">{message}</div>}
 
-      {match && (
-        <article className="match-card">
-          <p className="eyebrow">Совпадение найдено</p>
-          <h3>{match.standard} · {match.scriptType}</h3>
-          <dl>
-            <div><dt>Путь</dt><dd><code>{match.path}</code></dd></div>
-            <div><dt>Account</dt><dd>{match.account}</dd></div>
-            <div><dt>Ветка</dt><dd>{match.change === 0 ? "Получение" : "Сдача"}</dd></div>
-            <div><dt>Индекс</dt><dd>{match.index}</dd></div>
-            <div><dt>Адрес</dt><dd><code>{match.address}</code></dd></div>
-            <div><dt>Уверенность</dt><dd>Высокая: известный адрес совпал полностью</dd></div>
-          </dl>
-        </article>
+      {matches.length > 0 && (
+        <div className="matches-list">
+          {matches.map((match) => (
+            <article className="match-card" key={`${match.address}-${match.path}`}>
+              <p className="eyebrow">Совпадение найдено</p>
+              <h3>{match.standard} · {match.scriptType}</h3>
+              <dl>
+                <div><dt>Путь</dt><dd><code>{match.path}</code></dd></div>
+                <div><dt>Account</dt><dd>{match.account}</dd></div>
+                <div><dt>Ветка</dt><dd>{match.change === 0 ? "Получение" : "Сдача"}</dd></div>
+                <div><dt>Индекс</dt><dd>{match.index}</dd></div>
+                <div><dt>Адрес</dt><dd><code>{match.address}</code></dd></div>
+                <div><dt>Уверенность</dt><dd>Высокая: известный адрес совпал полностью</dd></div>
+              </dl>
+            </article>
+          ))}
+        </div>
       )}
 
       <div className="actions">
