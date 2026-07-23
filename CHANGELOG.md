@@ -1,54 +1,81 @@
 # Changelog
 
-All notable changes to this project will be documented here.
+Все заметные изменения проекта фиксируются в этом файле.
 
 ## [Unreleased]
 
-### Planned
+### Запланировано
 
-- BIP39 dependency review and Seed Inspector implementation.
-- Official seed-to-address test vectors before address derivation is enabled.
+- выполнение поиска в Web Worker;
+- пауза и продолжение длительного поиска;
+- экспорт очищенного отчёта без seed-фразы;
+- официальные end-to-end тестовые векторы для всех поддерживаемых типов адресов.
+
+## [0.2.1] - 2026-07-23
+
+### Добавлено
+
+- поиск сразу по нескольким известным Bitcoin-адресам;
+- ввод адресов по одному на строку, через пробел, запятую или точку с запятой;
+- удаление повторяющихся адресов;
+- автоматическое определение совместимых BIP44/BIP49/BIP84/BIP86 профилей по типу адреса;
+- кнопка автоматического выбора профилей;
+- отдельная карточка результата для каждого найденного адреса;
+- счётчик найденных целей в строке прогресса.
+
+### Изменено
+
+- поиск продолжается до нахождения всех введённых адресов или завершения диапазона;
+- сообщения результата теперь различают полное, частичное и нулевое совпадение.
+
+## [0.2.0] - 2026-07-23
+
+### Добавлено
+
+- локальная проверка английской BIP39 seed-фразы и checksum;
+- поддержка необязательной BIP39 passphrase;
+- локальная BIP32-деривация;
+- генерация Bitcoin mainnet адресов BIP44, BIP49, BIP84 и BIP86;
+- поиск пути по одному известному адресу;
+- настраиваемые диапазоны account и index;
+- прогресс, остановка поиска и очистка чувствительных данных;
+- рабочий русскоязычный интерфейс поиска.
+
+### Безопасность
+
+- seed-фраза не записывается в localStorage, IndexedDB или внешние сервисы;
+- сетевые запросы и проверка балансов не выполняются;
+- буфер seed очищается после завершения криптографической операции.
 
 ## [0.1.1] - 2026-07-23
 
-### Added
+### Добавлено
 
-- Versioned wallet-profile schema.
-- Standard Bitcoin BIP44, BIP49, BIP84 and BIP86 derivation profiles.
-- Conservative account, branch and address-index limits.
-- Source provenance and verification metadata.
-- Wallet profile database integrity validation.
-- ROADMAP.md and VERSION.md.
+- версионируемая схема профилей кошельков;
+- стандартные Bitcoin-профили BIP44, BIP49, BIP84 и BIP86;
+- консервативные диапазоны account, change и index;
+- метаданные источников и статуса проверки;
+- проверка целостности базы профилей;
+- ROADMAP.md и VERSION.md.
 
-### Changed
+### Изменено
 
-- Existing foundation cards now derive their data from the wallet-profile database.
-- Wallet Profile Database foundation was moved before Seed Inspector in the implementation order.
-- The application interface, metadata, accessibility labels and standard profile display names are now Russian-first.
-- The main workspace now clearly shows the completed v0.1.1 status and profile database boundaries.
+- карточки стандартов получают данные из общей базы профилей;
+- фундамент базы профилей перенесён перед Seed Inspector;
+- интерфейс, метаданные и подписи доступности переведены на русский язык.
 
-### Security
+### Безопасность
 
-- No cryptographic dependency or seed input was introduced.
-- Hard maximum ranges are represented in the profile contract to prevent unbounded future scans.
+- криптографические зависимости и ввод seed-фразы на этом этапе отсутствовали;
+- жёсткие максимумы диапазонов добавлены в контракт профилей.
 
 ## [0.1.0] - 2026-07-23
 
-### Added
+### Добавлено
 
-- Initial Wallet Recovery Studio application shell.
-- Bitcoin-first Recovery Workspace.
-- Explicit recovery-session state model.
-- Foundation wallet profiles for BIP44, BIP49, BIP84 and BIP86.
-- Threat model, architecture and security policy.
-- CI and GitHub Pages workflows.
-
-### Changed
-
-- Replaced the generic browser file-tool concept with a wallet recovery diagnostic workspace.
-- Refined the roadmap to separate local derivation from optional network activity scans.
-
-### Security
-
-- Cryptographic input is intentionally disabled in the foundation release.
-- Defined non-persistence and no-telemetry requirements before seed handling is introduced.
+- первоначальная оболочка Wallet Recovery Studio;
+- Bitcoin-first Recovery Workspace;
+- модель состояния recovery-сессии;
+- базовые профили BIP44/BIP49/BIP84/BIP86;
+- модель угроз, архитектура и политика безопасности;
+- CI и GitHub Pages workflows.
