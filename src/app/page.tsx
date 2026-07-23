@@ -6,7 +6,7 @@ export default function Home() {
     <div className="app-shell">
       <AppHeader />
       <RecoveryWorkspace />
-      <footer>Wallet Recovery Studio · Local-first open-source diagnostics</footer>
+      <footer>Wallet Recovery Studio · Локальная open-source диагностика</footer>
     </div>
   );
 }
