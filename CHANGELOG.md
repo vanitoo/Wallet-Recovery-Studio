@@ -7,6 +7,28 @@ All notable changes to this project will be documented here.
 ### Planned
 
 - BIP39 dependency review and Seed Inspector implementation.
+- Official seed-to-address test vectors before address derivation is enabled.
+
+## [0.1.1] - 2026-07-23
+
+### Added
+
+- Versioned wallet-profile schema.
+- Standard Bitcoin BIP44, BIP49, BIP84 and BIP86 derivation profiles.
+- Conservative account, branch and address-index limits.
+- Source provenance and verification metadata.
+- Wallet profile database integrity validation.
+- ROADMAP.md and VERSION.md.
+
+### Changed
+
+- Existing foundation cards now derive their data from the wallet-profile database.
+- Wallet Profile Database foundation was moved before Seed Inspector in the implementation order.
+
+### Security
+
+- No cryptographic dependency or seed input was introduced.
+- Hard maximum ranges are represented in the profile contract to prevent unbounded future scans.
 
 ## [0.1.0] - 2026-07-23
 

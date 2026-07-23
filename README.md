@@ -9,7 +9,39 @@ Wallet Recovery Studio helps users understand why valid recovery material can pr
 
 ## Status
 
-**v0.1 Foundation** is implemented: static application shell, Bitcoin-first scope, initial domain model, security boundaries, documentation and CI. Cryptographic derivation is intentionally deferred until dependency review and test vectors are ready.
+**v0.1.1 Wallet Profile Database Foundation** is implemented.
+
+The project now includes a versioned Bitcoin wallet-profile schema, conservative scan ranges, source verification metadata, integrity validation and standard BIP44/BIP49/BIP84/BIP86 profiles. Seed input and cryptographic derivation remain intentionally disabled until v0.2 dependency review and official test vectors are added.
+
+## What is implemented
+
+- Static local-first Recovery Workspace
+- Strict recovery-session state model
+- Versioned wallet-profile database contract
+- Standard Bitcoin derivation profiles:
+  - BIP44 / P2PKH
+  - BIP49 / P2SH-P2WPKH
+  - BIP84 / P2WPKH
+  - BIP86 / P2TR
+- Conservative defaults: accounts 0–4, branches 0 and 1, indexes 0–19
+- Runtime database integrity validation
+- Security boundaries, threat model and CI
+
+## Profile database design
+
+Wallet profiles describe address derivation rules rather than application screens. A wallet record can contain multiple derivation profiles and includes:
+
+- network and seed format;
+- passphrase support;
+- derivation path template;
+- script type;
+- account, branch and index limits;
+- historical rules and limitations;
+- source URL, verification status and verification date.
+
+The database is located in `src/features/wallet-profiles/`.
+
+Real wallet profiles such as Ledger Live, Trezor Suite and Electrum will be added only after their behavior is confirmed from reliable sources. Data from third-party compatibility databases will not be copied automatically without checking licensing and provenance.
 
 ## Principles
 
@@ -20,14 +52,6 @@ Wallet Recovery Studio helps users understand why valid recovery material can pr
 - Public results are separated from sensitive inputs
 - Small, auditable dependency surface
 - Strict TypeScript validation
-
-## Workspace roadmap
-
-- **Recovery** — guided known-address discovery
-- **Seed Inspector** — local phrase and checksum diagnostics
-- **Wallet Profiles** — documented derivation conventions
-- **Derivation Explorer** — expert path exploration
-- **Security** — threat model and safe operating guidance
 
 ## Development
 
@@ -60,7 +84,7 @@ See [SECURITY.md](SECURITY.md) and [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 
 ## Roadmap
 
-See [TODO.md](TODO.md).
+See [ROADMAP.md](ROADMAP.md) for milestones and [TODO.md](TODO.md) for the implementation checklist.
 
 ## License
 
