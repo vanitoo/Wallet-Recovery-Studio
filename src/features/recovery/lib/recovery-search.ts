@@ -15,6 +15,8 @@ export type SearchProgress = {
   account: number;
   change: number;
   index: number;
+  found: number;
+  targets: number;
 };
 
 export type RecoveryMatch = {
@@ -51,6 +53,10 @@ export function inspectMnemonic(value: string) {
   };
 }
 
+export function parseKnownAddresses(value: string): string[] {
+  return [...new Set(value.split(/[\s,;]+/).map((item) => item.trim()).filter(Boolean))];
+}
+
 export function validateBitcoinAddress(address: string): boolean {
   try {
     bitcoin.address.toOutputScript(address.trim(), bitcoin.networks.bitcoin);
@@ -58,6 +64,27 @@ export function validateBitcoinAddress(address: string): boolean {
   } catch {
     return false;
   }
+}
+
+export function inferProfilesForAddress(address: string): SupportedProfile[] {
+  try {
+    const script = bitcoin.address.toOutputScript(address.trim(), bitcoin.networks.bitcoin);
+    if (script.length === 25 && script[0] === 0x76 && script[1] === 0xa9) return ["bip44"];
+    if (script.length === 23 && script[0] === 0xa9) return ["bip49"];
+    if (script.length === 22 && script[0] === 0x00 && script[1] === 0x14) return ["bip84"];
+    if (script.length === 34 && script[0] === 0x51 && script[1] === 0x20) return ["bip86"];
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export function inferProfilesForAddresses(addresses: string[]): SupportedProfile[] {
+  const inferred = new Set<SupportedProfile>();
+  for (const address of addresses) {
+    for (const profile of inferProfilesForAddress(address)) inferred.add(profile);
+  }
+  return [...inferred];
 }
 
 function addressFor(profile: SupportedProfile, publicKey: Uint8Array): string {
@@ -83,27 +110,33 @@ function addressFor(profile: SupportedProfile, publicKey: Uint8Array): string {
   return payment.address;
 }
 
-export async function searchKnownAddress(options: {
+export async function searchKnownAddresses(options: {
   mnemonic: string;
   passphrase: string;
-  knownAddress: string;
+  knownAddresses: string[];
   profiles: SupportedProfile[];
   accountEnd: number;
   indexEnd: number;
   signal?: AbortSignal;
   onProgress?: (progress: SearchProgress) => void;
-}): Promise<RecoveryMatch | null> {
+}): Promise<RecoveryMatch[]> {
   const mnemonic = normalizeMnemonic(options.mnemonic);
   if (!bip39.validateMnemonic(mnemonic, bip39.wordlists.english)) {
     throw new Error("Seed-фраза не прошла проверку BIP39 checksum для английского словаря.");
   }
-  if (!validateBitcoinAddress(options.knownAddress)) {
-    throw new Error("Известный адрес не является корректным Bitcoin mainnet-адресом.");
+
+  const addresses = [...new Set(options.knownAddresses.map((item) => item.trim()).filter(Boolean))];
+  if (addresses.length === 0) throw new Error("Введите хотя бы один известный Bitcoin-адрес.");
+  const invalid = addresses.filter((address) => !validateBitcoinAddress(address));
+  if (invalid.length > 0) {
+    throw new Error(`Некорректные Bitcoin mainnet-адреса: ${invalid.join(", ")}`);
   }
 
   const seed = await bip39.mnemonicToSeed(mnemonic, options.passphrase);
   const root = bip32.fromSeed(seed, bitcoin.networks.bitcoin);
   const total = options.profiles.length * (options.accountEnd + 1) * 2 * (options.indexEnd + 1);
+  const remaining = new Set(addresses);
+  const matches: RecoveryMatch[] = [];
   let checked = 0;
 
   try {
@@ -117,16 +150,30 @@ export async function searchKnownAddress(options: {
             const node = root.derivePath(path);
             const address = addressFor(profile, node.publicKey);
             checked += 1;
-            options.onProgress?.({ checked, total, profile, account, change, index });
-            if (address === options.knownAddress.trim()) {
-              return { profile, standard: config.standard, scriptType: config.scriptType, path, account, change, index, address };
+
+            if (remaining.has(address)) {
+              matches.push({ profile, standard: config.standard, scriptType: config.scriptType, path, account, change, index, address });
+              remaining.delete(address);
             }
+
+            options.onProgress?.({
+              checked,
+              total,
+              profile,
+              account,
+              change,
+              index,
+              found: matches.length,
+              targets: addresses.length,
+            });
+
+            if (remaining.size === 0) return matches;
             if (checked % 25 === 0) await new Promise<void>((resolve) => setTimeout(resolve, 0));
           }
         }
       }
     }
-    return null;
+    return matches;
   } finally {
     seed.fill(0);
   }
