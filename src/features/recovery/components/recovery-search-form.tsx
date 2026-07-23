@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   inferProfilesForAddresses,
   inspectMnemonic,
   parseKnownAddresses,
-  searchKnownAddresses,
   validateBitcoinAddress,
   type RecoveryMatch,
   type SearchProgress,
@@ -19,6 +18,17 @@ const PROFILE_OPTIONS: { id: SupportedProfile; label: string }[] = [
   { id: "bip86", label: "BIP86 · Taproot bc1p…" },
 ];
 
+type SearchState = "idle" | "running" | "paused";
+
+type WorkerMessage =
+  | { type: "progress"; payload: SearchProgress }
+  | { type: "match"; payload: RecoveryMatch }
+  | { type: "paused" }
+  | { type: "resumed" }
+  | { type: "stopped" }
+  | { type: "complete"; payload: { matches: RecoveryMatch[]; checked: number; total: number } }
+  | { type: "error"; payload: string };
+
 export function RecoverySearchForm() {
   const [mnemonic, setMnemonic] = useState("");
   const [passphrase, setPassphrase] = useState("");
@@ -29,8 +39,8 @@ export function RecoverySearchForm() {
   const [progress, setProgress] = useState<SearchProgress | null>(null);
   const [matches, setMatches] = useState<RecoveryMatch[]>([]);
   const [message, setMessage] = useState<string | null>(null);
-  const [running, setRunning] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const [searchState, setSearchState] = useState<SearchState>("idle");
+  const workerRef = useRef<Worker | null>(null);
 
   const inspection = useMemo(() => inspectMnemonic(mnemonic), [mnemonic]);
   const knownAddresses = useMemo(() => parseKnownAddresses(knownAddressesText), [knownAddressesText]);
@@ -38,6 +48,15 @@ export function RecoverySearchForm() {
   const invalidAddresses = useMemo(() => knownAddresses.filter((address) => !validateBitcoinAddress(address)), [knownAddresses]);
   const suggestedProfiles = useMemo(() => inferProfilesForAddresses(validAddresses), [validAddresses]);
   const total = profiles.length * (accountEnd + 1) * 2 * (indexEnd + 1);
+  const running = searchState !== "idle";
+
+  useEffect(() => () => workerRef.current?.terminate(), []);
+
+  function finishWorker() {
+    workerRef.current?.terminate();
+    workerRef.current = null;
+    setSearchState("idle");
+  }
 
   function toggleProfile(profile: SupportedProfile) {
     setProfiles((current) => current.includes(profile) ? current.filter((item) => item !== profile) : [...current, profile]);
@@ -53,17 +72,27 @@ export function RecoverySearchForm() {
   }
 
   function clearSensitiveData() {
-    abortRef.current?.abort();
+    workerRef.current?.postMessage({ type: "stop" });
+    finishWorker();
     setMnemonic("");
     setPassphrase("");
     setKnownAddressesText("");
     setProgress(null);
     setMatches([]);
-    setMessage("Чувствительные данные удалены из состояния страницы. Для дополнительной очистки закройте вкладку браузера.");
-    setRunning(false);
+    setMessage("Чувствительные данные удалены из состояния страницы и рабочего потока. Для дополнительной очистки закройте вкладку браузера.");
   }
 
-  async function startSearch() {
+  function stopSearch() {
+    workerRef.current?.postMessage({ type: "stop" });
+    setMessage("Останавливаем поиск…");
+  }
+
+  function togglePause() {
+    if (searchState === "running") workerRef.current?.postMessage({ type: "pause" });
+    if (searchState === "paused") workerRef.current?.postMessage({ type: "resume" });
+  }
+
+  function startSearch() {
     setMessage(null);
     setMatches([]);
     setProgress(null);
@@ -85,35 +114,62 @@ export function RecoverySearchForm() {
       return;
     }
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setRunning(true);
-    try {
-      const result = await searchKnownAddresses({
-        mnemonic,
-        passphrase,
-        knownAddresses,
-        profiles,
-        accountEnd,
-        indexEnd,
-        signal: controller.signal,
-        onProgress: setProgress,
-      });
-      setMatches(result);
-      if (result.length === 0) {
-        setMessage(`Совпадения не найдены после проверки ${total.toLocaleString("ru-RU")} адресов.`);
-      } else if (result.length < knownAddresses.length) {
-        setMessage(`Найдено ${result.length} из ${knownAddresses.length} известных адресов. Для остальных увеличьте диапазон или выберите дополнительные профили.`);
-      } else {
-        setMessage(`Найдены все известные адреса: ${result.length} из ${knownAddresses.length}.`);
+    finishWorker();
+    const worker = new Worker(new URL("../workers/recovery-search.worker.ts", import.meta.url));
+    workerRef.current = worker;
+    setSearchState("running");
+
+    worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
+      const data = event.data;
+      if (data.type === "progress") {
+        setProgress(data.payload);
+        return;
       }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") setMessage("Поиск остановлен пользователем.");
-      else setMessage(error instanceof Error ? error.message : "Не удалось выполнить поиск.");
-    } finally {
-      setRunning(false);
-      abortRef.current = null;
-    }
+      if (data.type === "match") {
+        setMatches((current) => current.some((item) => item.address === data.payload.address) ? current : [...current, data.payload]);
+        return;
+      }
+      if (data.type === "paused") {
+        setSearchState("paused");
+        setMessage("Поиск приостановлен. Текущая позиция сохранена в рабочем потоке.");
+        return;
+      }
+      if (data.type === "resumed") {
+        setSearchState("running");
+        setMessage("Поиск продолжен с сохранённой позиции.");
+        return;
+      }
+      if (data.type === "stopped") {
+        setMessage("Поиск остановлен пользователем.");
+        finishWorker();
+        return;
+      }
+      if (data.type === "error") {
+        setMessage(data.payload);
+        finishWorker();
+        return;
+      }
+
+      setMatches(data.payload.matches);
+      if (data.payload.matches.length === 0) {
+        setMessage(`Совпадения не найдены после проверки ${data.payload.checked.toLocaleString("ru-RU")} адресов.`);
+      } else if (data.payload.matches.length < knownAddresses.length) {
+        setMessage(`Найдено ${data.payload.matches.length} из ${knownAddresses.length} известных адресов. Для остальных увеличьте диапазон или выберите дополнительные профили.`);
+      } else {
+        setMessage(`Найдены все известные адреса: ${data.payload.matches.length} из ${knownAddresses.length}.`);
+      }
+      finishWorker();
+    };
+
+    worker.onerror = () => {
+      setMessage("Рабочий поток поиска завершился с ошибкой.");
+      finishWorker();
+    };
+
+    worker.postMessage({
+      type: "start",
+      payload: { mnemonic, passphrase, knownAddresses, profiles, accountEnd, indexEnd },
+    });
   }
 
   return (
@@ -123,7 +179,7 @@ export function RecoverySearchForm() {
           <p className="eyebrow">Рабочий локальный поиск</p>
           <h2 id="recovery-search-title">Найти пути по известным адресам</h2>
         </div>
-        <span className="status-pill">Сеть отключена</span>
+        <span className="status-pill">Web Worker · сеть отключена</span>
       </div>
 
       <div className="warning-box">
@@ -133,28 +189,24 @@ export function RecoverySearchForm() {
       <div className="form-grid">
         <label className="field field-wide">
           <span>Seed-фраза BIP39</span>
-          <textarea value={mnemonic} onChange={(event) => setMnemonic(event.target.value)} rows={4} spellCheck={false} autoComplete="off" placeholder="Введите 12, 15, 18, 21 или 24 английских слова" />
+          <textarea value={mnemonic} onChange={(event) => setMnemonic(event.target.value)} rows={4} spellCheck={false} autoComplete="off" placeholder="Введите 12, 15, 18, 21 или 24 английских слова" disabled={running} />
           <small>{mnemonic ? `${inspection.wordCount} слов · ${inspection.validChecksum ? "checksum корректен" : "checksum не подтверждён"}` : "Фраза хранится только в памяти открытой страницы."}</small>
         </label>
 
         <label className="field">
           <span>BIP39 passphrase</span>
-          <input type="password" value={passphrase} onChange={(event) => setPassphrase(event.target.value)} autoComplete="off" placeholder="Необязательно" />
+          <input type="password" value={passphrase} onChange={(event) => setPassphrase(event.target.value)} autoComplete="off" placeholder="Необязательно" disabled={running} />
           <small>Неверная passphrase создаёт другой, но корректный кошелёк.</small>
         </label>
 
         <label className="field">
           <span>Известные Bitcoin-адреса</span>
-          <textarea value={knownAddressesText} onChange={(event) => setKnownAddressesText(event.target.value)} rows={4} autoComplete="off" spellCheck={false} placeholder={"По одному адресу на строку\n1…\n3…\nbc1q…\nbc1p…"} />
-          <small>
-            {knownAddresses.length === 0
-              ? "Можно вставить несколько адресов через новую строку, пробел или запятую."
-              : `${validAddresses.length} корректных${invalidAddresses.length ? ` · ${invalidAddresses.length} с ошибкой` : ""}`}
-          </small>
+          <textarea value={knownAddressesText} onChange={(event) => setKnownAddressesText(event.target.value)} rows={4} autoComplete="off" spellCheck={false} placeholder={"По одному адресу на строку\n1…\n3…\nbc1q…\nbc1p…"} disabled={running} />
+          <small>{knownAddresses.length === 0 ? "Можно вставить несколько адресов через новую строку, пробел или запятую." : `${validAddresses.length} корректных${invalidAddresses.length ? ` · ${invalidAddresses.length} с ошибкой` : ""}`}</small>
         </label>
       </div>
 
-      <fieldset className="profile-picker">
+      <fieldset className="profile-picker" disabled={running}>
         <legend>Профили поиска</legend>
         {PROFILE_OPTIONS.map((option) => (
           <label key={option.id} className="check-option">
@@ -162,14 +214,12 @@ export function RecoverySearchForm() {
             <span>{option.label}</span>
           </label>
         ))}
-        <button className="profile-auto-button" type="button" onClick={applySuggestedProfiles} disabled={validAddresses.length === 0 || running}>
-          Подобрать по адресам
-        </button>
+        <button className="profile-auto-button" type="button" onClick={applySuggestedProfiles} disabled={validAddresses.length === 0 || running}>Подобрать по адресам</button>
       </fieldset>
 
       <div className="range-grid">
-        <label className="field"><span>Последний account</span><input type="number" min={0} max={20} value={accountEnd} onChange={(event) => setAccountEnd(Math.min(20, Math.max(0, Number(event.target.value))))} /></label>
-        <label className="field"><span>Последний index</span><input type="number" min={0} max={100} value={indexEnd} onChange={(event) => setIndexEnd(Math.min(100, Math.max(0, Number(event.target.value))))} /></label>
+        <label className="field"><span>Последний account</span><input type="number" min={0} max={20} value={accountEnd} disabled={running} onChange={(event) => setAccountEnd(Math.min(20, Math.max(0, Number(event.target.value))))} /></label>
+        <label className="field"><span>Последний index</span><input type="number" min={0} max={100} value={indexEnd} disabled={running} onChange={(event) => setIndexEnd(Math.min(100, Math.max(0, Number(event.target.value))))} /></label>
         <div className="estimate"><span>Будет проверено</span><strong>{total.toLocaleString("ru-RU")} адресов</strong><small>Целей: {knownAddresses.length}</small></div>
       </div>
 
@@ -202,8 +252,9 @@ export function RecoverySearchForm() {
       )}
 
       <div className="actions">
-        <button className="primary-button" type="button" onClick={startSearch} disabled={running}>{running ? "Идёт поиск…" : "Начать поиск"}</button>
-        {running && <button className="secondary-button" type="button" onClick={() => abortRef.current?.abort()}>Остановить</button>}
+        <button className="primary-button" type="button" onClick={startSearch} disabled={running}>{running ? searchState === "paused" ? "Поиск на паузе" : "Идёт поиск…" : "Начать поиск"}</button>
+        {running && <button className="secondary-button" type="button" onClick={togglePause}>{searchState === "paused" ? "Продолжить" : "Пауза"}</button>}
+        {running && <button className="secondary-button" type="button" onClick={stopSearch}>Остановить</button>}
         <button className="danger-button" type="button" onClick={clearSensitiveData}>Очистить чувствительные данные</button>
       </div>
     </section>
