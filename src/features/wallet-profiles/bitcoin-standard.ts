@@ -41,28 +41,28 @@ function createStandardDerivationProfile(
 const standardProfiles: readonly DerivationProfile[] = [
   createStandardDerivationProfile({
     id: "bitcoin-bip44-p2pkh",
-    name: "Bitcoin Legacy",
+    name: "Устаревшие адреса Bitcoin",
     standard: "BIP44",
     pathTemplate: "m/44'/0'/{account}'/{change}/{index}",
     scriptType: "p2pkh",
   }),
   createStandardDerivationProfile({
     id: "bitcoin-bip49-p2sh-p2wpkh",
-    name: "Bitcoin Nested SegWit",
+    name: "Вложенный SegWit",
     standard: "BIP49",
     pathTemplate: "m/49'/0'/{account}'/{change}/{index}",
     scriptType: "p2sh-p2wpkh",
   }),
   createStandardDerivationProfile({
     id: "bitcoin-bip84-p2wpkh",
-    name: "Bitcoin Native SegWit",
+    name: "Нативный SegWit",
     standard: "BIP84",
     pathTemplate: "m/84'/0'/{account}'/{change}/{index}",
     scriptType: "p2wpkh",
   }),
   createStandardDerivationProfile({
     id: "bitcoin-bip86-p2tr",
-    name: "Bitcoin Taproot",
+    name: "Taproot",
     standard: "BIP86",
     pathTemplate: "m/86'/0'/{account}'/{change}/{index}",
     scriptType: "p2tr",
